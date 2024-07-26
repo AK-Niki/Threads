@@ -10,8 +10,6 @@ import com.bumptech.glide.Glide
 import ru.netology.nmedia.R
 import ru.netology.nmedia.databinding.CardPostBinding
 import ru.netology.nmedia.dto.Post
-import android.util.Log
-import com.bumptech.glide.request.RequestOptions
 
 interface OnInteractionListener {
     fun onLike(post: Post) {}
@@ -49,6 +47,7 @@ class PostViewHolder(
 
             Glide.with(avatar.context)
                 .load("http://10.0.2.2:9999/avatars/${post.authorAvatar}")
+                .circleCrop()
                 .timeout(10_000)
                 .into(avatar)
 
