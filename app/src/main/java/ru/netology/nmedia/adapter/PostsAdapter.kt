@@ -6,9 +6,12 @@ import android.widget.PopupMenu
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import ru.netology.nmedia.R
 import ru.netology.nmedia.databinding.CardPostBinding
 import ru.netology.nmedia.dto.Post
+import android.util.Log
+import com.bumptech.glide.request.RequestOptions
 
 interface OnInteractionListener {
     fun onLike(post: Post) {}
@@ -41,9 +44,14 @@ class PostViewHolder(
             author.text = post.author
             published.text = post.published
             content.text = post.content
-            // в адаптере
             like.isChecked = post.likedByMe
             like.text = "${post.likes}"
+
+            Glide.with(avatar.context)
+                .load("http://10.0.2.2:9999/avatars/${post.authorAvatar}")
+                .timeout(10_000)
+                .into(avatar)
+
 
             menu.setOnClickListener {
                 PopupMenu(it.context, it).apply {
@@ -58,7 +66,6 @@ class PostViewHolder(
                                 onInteractionListener.onEdit(post)
                                 true
                             }
-
                             else -> false
                         }
                     }
