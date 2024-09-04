@@ -40,6 +40,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
             override fun onError(exception: Exception) {
                 _data.postValue(FeedModel(error = true))
+                showRetrySnackbar("Ошибка загрузки")
             }
         })
     }
@@ -54,6 +55,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
                 override fun onError(exception: Exception) {
                     _data.postValue(FeedModel(error = true))
+                    showRetrySnackbar("Ошибка создания поста")
                 }
             })
         }
@@ -81,6 +83,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
             override fun onError(exception: Exception) {
                 _data.postValue(_data.value?.copy(posts = old))
+                showRetrySnackbar("Ошибка отображения лайка", id)
             }
         })
     }
@@ -90,13 +93,19 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         _data.postValue(_data.value?.copy(posts = _data.value?.posts.orEmpty()
             .filter { it.id != id }))
         repository.removeById(id, object : PostRepository.RemoveCallback {
-            override fun onSuccess() {
-                loadPosts()
-            }
+            override fun onSuccess() {}
 
             override fun onError(exception: Exception) {
                 _data.postValue(_data.value?.copy(posts = old))
+                showRetrySnackbar("Ошибка удаления поста", id)
             }
         })
     }
+
+    fun showRetrySnackbar(message: String, postId: Long? = null) {
+        _retrySnackbar.postValue(message to postId)
+    }
+    private val _retrySnackbar = MutableLiveData<Pair<String, Long?>>()
+    val retrySnackbar: LiveData<Pair<String, Long?>> = _retrySnackbar
+
 }
