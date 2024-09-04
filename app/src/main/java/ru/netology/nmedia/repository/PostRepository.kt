@@ -1,6 +1,5 @@
 package ru.netology.nmedia.repository
 
-import androidx.lifecycle.LiveData
 import ru.netology.nmedia.dto.Post
 
 interface PostRepository {
@@ -20,7 +19,7 @@ interface PostRepository {
     }
 
     interface SaveCallback {
-        fun onSuccess()
+        fun onSuccess(body: Post)
         fun onError(exception: Exception)
     }
 
@@ -29,4 +28,3 @@ interface PostRepository {
         fun onError(exception: Exception)
     }
 }
-
