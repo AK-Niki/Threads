@@ -79,13 +79,21 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun likeById(id: Long) {
-        repository.likeById(id, object : PostRepository.LikeCallback {
-            override fun onSuccess() {
-                loadPosts()
+        val old = _data.value?.posts.orEmpty()
+        val likedByMe = old.find { it.id == id }?.likedByMe ?: return
+        repository.likeById(id, likedByMe, object : PostRepository.LikeCallback {
+            override fun onSuccess(postFromServer: Post) {
+                _data.postValue(
+                    _data.value?.copy(
+                        posts = old.map {
+                            if (it.id == id) postFromServer
+                            else it
+                        }
+                    )
+                )
             }
-
             override fun onError(exception: Exception) {
-                // DO error
+                _data.postValue(_data.value?.copy(posts = old))
             }
         })
     }

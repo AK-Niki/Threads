@@ -48,59 +48,35 @@ class PostRepositoryImpl: PostRepository {
     }
 
 
-    override fun likeById(id: Long, callback: PostRepository.LikeCallback) {
-        val requestGet: Request = Request.Builder()
-            .url("$BASE_URL/api/posts/$id")
-            .build()
+    override fun likeById(id: Long, likedByMe: Boolean, callback: PostRepository.LikeCallback) {
+        val request: Request = if (likedByMe) {
+            Request.Builder()
+                .delete()
+                .url("$BASE_URL/api/posts/$id/likes")
+                .build()
+        } else {
+            Request.Builder()
+                .post("".toRequestBody())
+                .url("$BASE_URL/api/posts/$id/likes")
+                .build()
+        }
 
-        client.newCall(requestGet)
-            .enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    callback.onError(e)
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback.onError(e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (!response.isSuccessful) {
+                    callback.onError(IOException("Unexpected code ${response.code}"))
+                } else {
+                    response.let { it.body?.string() }
+                        ?.let { callback.onSuccess(gson.fromJson(it, Post::class.java)) }
+                        ?: callback.onError(RuntimeException("body is null"))
                 }
-
-                override fun onResponse(call: Call, response: Response) {
-                    if (!response.isSuccessful) {
-                        callback.onError(IOException("Unexpected code ${response.code}"))
-                        return
-                    }
-
-                    val post = response.body?.string()?.let {
-                        gson.fromJson(it, Post::class.java)
-                    } ?: run {
-                        callback.onError(RuntimeException("body is null"))
-                        return
-                    }
-
-                    val request: Request = if (post.likedByMe) {
-                        Request.Builder()
-                            .delete()
-                            .url("$BASE_URL/api/posts/$id/likes")
-                            .build()
-                    } else {
-                        Request.Builder()
-                            .post("".toRequestBody())
-                            .url("$BASE_URL/api/posts/$id/likes")
-                            .build()
-                    }
-
-                    client.newCall(request).enqueue(object : Callback {
-                        override fun onFailure(call: Call, e: IOException) {
-                            callback.onError(e)
-                        }
-
-                        override fun onResponse(call: Call, response: Response) {
-                            if (!response.isSuccessful) {
-                                callback.onError(IOException("Unexpected code ${response.code}"))
-                            } else {
-                                callback.onSuccess()
-                            }
-                        }
-                    })
-                }
-            })
+            }
+        })
     }
-
 
 
     override fun save(post: Post, callback: PostRepository.SaveCallback) {
