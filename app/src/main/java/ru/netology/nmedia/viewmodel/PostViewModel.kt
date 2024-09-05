@@ -83,7 +83,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
             override fun onError(exception: Exception) {
                 _data.postValue(_data.value?.copy(posts = old))
-                showRetrySnackbar("Ошибка отображения лайка", id)
+                showRetrySnackbar("Ошибка обновления лайка", id)
             }
         })
     }
@@ -97,15 +97,17 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
             override fun onError(exception: Exception) {
                 _data.postValue(_data.value?.copy(posts = old))
-                showRetrySnackbar("Ошибка удаления поста", id)
+                showRetrySnackbar("Ошибка - не удалось удалить", id)
             }
         })
     }
 
+
+    private val _retrySnackbar = SingleLiveEvent<Pair<String, Long?>>()
+    val retrySnackbar: LiveData<Pair<String, Long?>> = _retrySnackbar
+
     fun showRetrySnackbar(message: String, postId: Long? = null) {
         _retrySnackbar.postValue(message to postId)
     }
-    private val _retrySnackbar = MutableLiveData<Pair<String, Long?>>()
-    val retrySnackbar: LiveData<Pair<String, Long?>> = _retrySnackbar
 
 }
