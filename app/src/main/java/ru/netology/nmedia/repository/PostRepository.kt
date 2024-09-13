@@ -1,6 +1,6 @@
 package ru.netology.nmedia.repository
 
-import ru.netology.nmedia.dto.Post
+import ru.netology.nmedia.dto.*
 
 interface PostRepository {
     fun getAll(callback: GetAllCallback)
@@ -19,7 +19,7 @@ interface PostRepository {
     }
 
     interface SaveCallback {
-        fun onSuccess(body: Post)
+        fun onSuccess()
         fun onError(exception: Exception)
     }
 
@@ -28,3 +28,5 @@ interface PostRepository {
         fun onError(exception: Exception)
     }
 }
+
+

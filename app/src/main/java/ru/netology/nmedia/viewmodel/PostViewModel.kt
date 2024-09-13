@@ -1,31 +1,41 @@
 package ru.netology.nmedia.viewmodel
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.*
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.model.FeedModel
-import ru.netology.nmedia.repository.*
+import ru.netology.nmedia.repository.PostRepository
+import ru.netology.nmedia.repository.PostRepositoryImpl
 import ru.netology.nmedia.util.SingleLiveEvent
 
+private val emptyPost = Post(
+    id = 0,
+    authorId = 0,
+    author = "",
+    content = "",
+    published = 0L,
+    likedByMe = false,
+    likes = 0,
+    attachment = null
+)
 
 class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: PostRepository = PostRepositoryImpl()
+
     private val _data = MutableLiveData(FeedModel())
     val data: LiveData<FeedModel>
         get() = _data
-    val edited = MutableLiveData(Post(
-        id = 0L,
-        author = "",
-        content = "",
-        published = "",
-        likedByMe = false,
-        authorAvatar = ""
-    ))
+
     private val _postCreated = SingleLiveEvent<Unit>()
     val postCreated: LiveData<Unit>
         get() = _postCreated
+
+    private val _edited = MutableLiveData(emptyPost)
+    val edited: LiveData<Post> get() = _edited
+
+    private val _retrySnackbar = SingleLiveEvent<Pair<String, Long?>>()
+    val retrySnackbar: LiveData<Pair<String, Long?>>
+        get() = _retrySnackbar
 
     init {
         loadPosts()
@@ -33,6 +43,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadPosts() {
         _data.postValue(FeedModel(loading = true))
+
         repository.getAll(object : PostRepository.GetAllCallback {
             override fun onSuccess(posts: List<Post>) {
                 _data.postValue(FeedModel(posts = posts, empty = posts.isEmpty()))
@@ -40,74 +51,69 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
             override fun onError(exception: Exception) {
                 _data.postValue(FeedModel(error = true))
-                showRetrySnackbar("Ошибка загрузки")
+                _retrySnackbar.postValue("Ошибка загрузки постов, попробуйте снова" to null)
             }
         })
-    }
-
-    fun save() {
-        edited.value?.let {
-            repository.save(it, object : PostRepository.SaveCallback {
-                override fun onSuccess(body: Post) {
-                    _postCreated.postValue(Unit)
-                    loadPosts()
-                }
-
-                override fun onError(exception: Exception) {
-                    _data.postValue(FeedModel(error = true))
-                    showRetrySnackbar("Ошибка создания поста")
-                }
-            })
-        }
-    }
-
-    fun edit(post: Post) {
-        edited.value = post
-    }
-
-    fun changeContent(content: String) {
-        val text = content.trim()
-        if (edited.value?.content == text) return
-        edited.value = edited.value?.copy(content = text)
     }
 
     fun likeById(id: Long) {
         val old = _data.value?.posts.orEmpty()
         val likedByMe = old.find { it.id == id }?.likedByMe ?: return
+
         repository.likeById(id, likedByMe, object : PostRepository.LikeCallback {
             override fun onSuccess(postFromServer: Post) {
-                _data.postValue(_data.value?.copy(posts = old.map {
-                    if (it.id == id) postFromServer else it
-                }))
+                _data.postValue(
+                    _data.value?.copy(
+                        posts = old.map {
+                            if (it.id == id) postFromServer else it
+                        }
+                    )
+                )
             }
 
             override fun onError(exception: Exception) {
                 _data.postValue(_data.value?.copy(posts = old))
-                showRetrySnackbar("Ошибка обновления лайка", id)
+                _retrySnackbar.postValue("Ошибка лайка, попробуйте снова" to id)
             }
         })
+    }
+
+    fun save() {
+        val post = _edited.value ?: return
+        repository.save(post, object : PostRepository.SaveCallback {
+            override fun onSuccess() {
+                _postCreated.postValue(Unit)
+                loadPosts()
+            }
+
+            override fun onError(exception: Exception) {
+                _retrySnackbar.postValue("Ошибка сохранения поста, попробуйте снова" to null)
+            }
+        })
+    }
+
+    fun edit(post: Post) {
+        _edited.value = post
+    }
+
+    fun changeContent(content: String) {
+        val text = content.trim()
+        if (_edited.value?.content == text) return
+        _edited.value = _edited.value?.copy(content = text)
     }
 
     fun removeById(id: Long) {
         val old = _data.value?.posts.orEmpty()
-        _data.postValue(_data.value?.copy(posts = _data.value?.posts.orEmpty()
-            .filter { it.id != id }))
+        _data.postValue(_data.value?.copy(posts = old.filter { it.id != id }))
+
         repository.removeById(id, object : PostRepository.RemoveCallback {
-            override fun onSuccess() {}
+            override fun onSuccess() {
+            }
 
             override fun onError(exception: Exception) {
                 _data.postValue(_data.value?.copy(posts = old))
-                showRetrySnackbar("Ошибка - не удалось удалить", id)
+                _retrySnackbar.postValue("Ошибка удаления поста, попробуйте снова" to id)
             }
         })
     }
-
-
-    private val _retrySnackbar = SingleLiveEvent<Pair<String, Long?>>()
-    val retrySnackbar: LiveData<Pair<String, Long?>> = _retrySnackbar
-
-    fun showRetrySnackbar(message: String, postId: Long? = null) {
-        _retrySnackbar.postValue(message to postId)
-    }
-
 }

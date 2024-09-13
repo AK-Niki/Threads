@@ -40,17 +40,16 @@ class PostViewHolder(
     fun bind(post: Post) {
         binding.apply {
             author.text = post.author
-            published.text = post.published
+            published.text = post.published.toString()
             content.text = post.content
             like.isChecked = post.likedByMe
             like.text = "${post.likes}"
 
             Glide.with(avatar.context)
-                .load("http://10.0.2.2:9999/avatars/${post.authorAvatar}")
+                .load("http://10.0.2.2:9999/avatars/${post.authorId}")
                 .circleCrop()
                 .timeout(10_000)
                 .into(avatar)
-
 
             menu.setOnClickListener {
                 PopupMenu(it.context, it).apply {

@@ -67,19 +67,18 @@ class FeedFragment : Fragment() {
         binding.fab.setOnClickListener {
             findNavController().navigate(R.id.action_feedFragment_to_newPostFragment)
         }
-            viewModel.retrySnackbar.observe(viewLifecycleOwner) { (message, postId) ->
-                Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
-                    .setAction("Повторить загрузку") {
-                        when {
-                            postId == null -> viewModel.loadPosts()
-                            else -> viewModel.likeById(postId)
-                        }
+        viewModel.retrySnackbar.observe(viewLifecycleOwner) { (message, postId) ->
+            Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+                .setAction("Повторить загрузку") {
+                    when {
+                        postId == null -> viewModel.loadPosts()
+                        else -> viewModel.likeById(postId)
                     }
-                    .setAnchorView(binding.fab)
-                    .show()
-            }
+                }
+                .setAnchorView(binding.fab)
+                .show()
+        }
 
         return binding.root
     }
 }
-
